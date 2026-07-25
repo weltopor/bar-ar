@@ -54,10 +54,8 @@
   
   <body style="margin: 0px; overflow: hidden;">
 
-    <!-- Кнопка вызова меню, появляется после нахождения маркера -->
     <div id="menu-open-btn" onclick="showScreen('menu')">📋 Меню</div>
 
-    <!-- Экран 1: список напитков -->
     <div id="screen-menu" class="ar-screen">
       <h2>Меню бара</h2>
       <div class="menu-item" onclick="showDrink('mojito')">🍹 Мохито</div>
@@ -66,7 +64,6 @@
       <div class="back-btn" onclick="hideAllScreens()">Закрыть</div>
     </div>
 
-    <!-- Экран 2: описание конкретного напитка -->
     <div id="screen-drink" class="ar-screen">
       <h2 id="drink-title"></h2>
       <p id="drink-desc"></p>
@@ -89,40 +86,48 @@
 
     </a-scene>
 
-   <script>
-    const drinks = {
+    <script>
+      const drinks = {
         mojito: { title: "Мохито", desc: "Ром, мята, лайм, содовая. Классика, освежает в любую погоду." },
         negroni: { title: "Негрони", desc: "Джин, кампари, вермут. Горький, крепкий, для тех кто знает толк." },
         beer: { title: "Крафтовое пиво", desc: "Местная пивоварня, IPA, 5.8%. Наш хит месяца." }
-    };
+      };
 
-    function playClickSound() {
+      function playClickSound() {
         const sound = document.getElementById('click-sound');
-        sound.currentTime = 0;
-        sound.play();
-    }
+        try {
+          sound.pause();
+          sound.currentTime = 0;
+        } catch (e) {
+          console.log('Не удалось сбросить currentTime:', e);
+        }
+        const playPromise = sound.play();
+        if (playPromise) {
+          playPromise.catch(err => console.log('Play заблокирован:', err));
+        }
+      }
 
-    document.querySelector('#target').addEventListener('targetFound', () => {
+      document.querySelector('#target').addEventListener('targetFound', () => {
         document.getElementById('menu-open-btn').style.display = 'block';
         playClickSound();
-    });
+      });
 
-    function showScreen(id) {
+      function showScreen(id) {
         hideAllScreens();
         document.getElementById('screen-' + id).style.display = 'block';
-    }
+      }
 
-    function hideAllScreens() {
+      function hideAllScreens() {
         document.querySelectorAll('.ar-screen').forEach(el => el.style.display = 'none');
-    }
+      }
 
-    function showDrink(key) {
+      function showDrink(key) {
         const d = drinks[key];
         document.getElementById('drink-title').innerText = d.title;
         document.getElementById('drink-desc').innerText = d.desc;
         showScreen('drink');
         playClickSound();
-    }
+      }
     </script>
   </body>
 </html>
