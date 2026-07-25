@@ -8,11 +8,13 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
     <style>
+      body { margin: 0; overflow: hidden; }
+
       .ar-screen {
         display: none;
         position: fixed;
         top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.9);
+        background: linear-gradient(135deg, #1a1a2e, #16213e);
         color: white;
         font-family: sans-serif;
         z-index: 999;
@@ -26,71 +28,71 @@
         background: rgba(255,255,255,0.1);
         border-radius: 10px;
       }
-      .back-btn {
+      .exit-btn {
         display: inline-block;
         padding: 10px 18px;
         background: #444;
         border-radius: 8px;
-        margin-top: 12px;
-      }
-      #menu-open-btn {
-        display: none;
-        position: fixed;
-        bottom: 30px;
-        left: 50%;
-        transform: translateX(-50%);
-        padding: 12px 24px;
-        background: rgba(0,0,0,0.8);
-        color: white;
-        border-radius: 30px;
-        font-family: sans-serif;
-        z-index: 998;
+        margin-top: 16px;
       }
     </style>
   </head>
   
-  <body style="margin: 0px; overflow: hidden;">
-
-    <div id="menu-open-btn" onclick="showScreen('menu')">📋 Меню</div>
+  <body>
 
     <div id="screen-menu" class="ar-screen">
       <h2 id="bar-title"></h2>
       <div id="menu-items"></div>
-      <div class="back-btn" onclick="hideAllScreens()">Закрыть</div>
+      <div class="exit-btn" onclick="exitMenu()">✕ Выйти и сканировать другое место</div>
     </div>
 
-    <a-scene mindar-image="imageTargetSrc: ./mind/bar1-targets.mind; missTolerance: 1000000;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+    <a-scene id="ar-scene" mindar-image="imageTargetSrc: ./mind/targets.mind; missTolerance: 1000000;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-      <a-entity id="target" mindar-image-target="targetIndex: 0"></a-entity>
+
+      <!-- Один <a-entity> на каждую вывеску/бар, targetIndex совпадает с порядком загрузки фото при компиляции -->
+      <a-entity id="target-0" mindar-image-target="targetIndex: 0"></a-entity>
+      <a-entity id="target-1" mindar-image-target="targetIndex: 1"></a-entity>
+      <a-entity id="target-2" mindar-image-target="targetIndex: 2"></a-entity>
     </a-scene>
 
     <script>
-      // Единственное, что меняется под каждый бар — это имя JSON-файла
-      const MENU_FILE = "./menus/bar1.json";
+      // Сопоставление номера маркера с файлом меню конкретного бара
+      const BAR_MENUS = {
+        0: "./menus/bar1.json",
+        1: "./menus/bar2.json",
+        2: "./menus/bar3.json"
+      };
 
-      let menuData = null;
-
-      fetch(MENU_FILE)
-        .then(res => res.json())
-        .then(data => {
-          menuData = data;
-          document.getElementById('bar-title').innerText = data.barName;
-          const itemsHtml = data.items.map(item =>
-            `<div class="menu-item"><b>${item.name}</b><br>${item.desc}</div>`
-          ).join('');
-          document.getElementById('menu-items').innerHTML = itemsHtml;
-        });
-
-      document.querySelector('#target').addEventListener('targetFound', () => {
-        document.getElementById('menu-open-btn').style.display = 'block';
-      });
-
-      function showScreen(id) {
-        document.getElementById('screen-' + id).style.display = 'block';
+      function onTargetFound(index) {
+        fetch(BAR_MENUS[index])
+          .then(res => res.json())
+          .then(data => {
+            document.getElementById('bar-title').innerText = data.barName;
+            const itemsHtml = data.items.map(item =>
+              `<div class="menu-item"><b>${item.name}</b><br>${item.desc}</div>`
+            ).join('');
+            document.getElementById('menu-items').innerHTML = itemsHtml;
+            showMenuAndPauseCamera();
+          })
+          .catch(err => console.log('Ошибка загрузки меню:', err));
       }
 
-      function hideAllScreens() {
-        document.querySelectorAll('.ar-screen').forEach(el => el.style.display = 'none');
+      // Подписываемся на все три маркера
+      Object.keys(BAR_MENUS).forEach(index => {
+        document.getElementById('target-' + index)
+          .addEventListener('targetFound', () => onTargetFound(index));
+      });
+
+      function showMenuAndPauseCamera() {
+        document.getElementById('screen-menu').style.display = 'block';
+        const arSystem = document.querySelector('#ar-scene').systems["mindar-image-system"];
+        arSystem.pause(); // останавливает камеру и трекинг
+      }
+
+      function exitMenu() {
+        document.getElementById('screen-menu').style.display = 'none';
+        const arSystem = document.querySelector('#ar-scene').systems["mindar-image-system"];
+        arSystem.unpause(); // снова включает камеру, можно сканировать следующую вывеску
       }
     </script>
   </body>

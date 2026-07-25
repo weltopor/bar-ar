@@ -1,0 +1,8 @@
+{
+  "barName": "Nach Wache",
+  "items": [
+    { "name": "Saft", "desc": "Ром, мята, лайм, содовая." },
+    { "name": "Birne", "desc": "Джин, кампари, вермут." },
+    { "name": "Helles Bier", "desc": "Местная пивоварня, IPA, 5.8%." }
+  ]
+}

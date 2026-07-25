@@ -1,0 +1,8 @@
+{
+  "barName": "Stubertus",
+  "items": [
+    { "name": "Apperol", "desc": "Ром, мята, лайм, содовая." },
+    { "name": "Mersi", "desc": "Джин, кампари, вермут." },
+    { "name": "Dark Bier", "desc": "Местная пивоварня, IPA, 5.8%." }
+  ]
+}
