@@ -1,56 +1,51 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <!-- Основные настройки страницы -->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>AR Бар</title>
     
-    <!-- ПОДКЛЮЧАЕМ "БИБЛИОТЕКИ-КИРПИЧИКИ" -->
-    <!-- 1. A-Frame: Движок, который умеет рисовать 3D-модели в браузере -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    
-    <!-- 2. MindAR.js: Движок компьютерного зрения, который ищет маркер в камере -->
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-    <script>
-    AFRAME.registerComponent('stay-visible', {
-        init: function () {
-        this.found = false;
-        this.el.addEventListener('targetFound', () => {
-            this.found = true;
-        });
-        },
-        tick: function () {
-        if (this.found) {
-            this.el.object3D.visible = true;
-        }
-        }
-    });
-    </script>
 
-</head>
+    <script>
+      AFRAME.registerComponent('capture-and-detach', {
+        init: function () {
+          this.captured = false;
+          this.el.addEventListener('targetFound', () => {
+            if (this.captured) return;
+            this.captured = true;
+
+            const scene = this.el.sceneEl;
+            const model = this.el.querySelector('a-gltf-model');
+
+            const worldPos = new THREE.Vector3();
+            const worldQuat = new THREE.Quaternion();
+            this.el.object3D.getWorldPosition(worldPos);
+            this.el.object3D.getWorldQuaternion(worldQuat);
+
+            const fixedEntity = document.createElement('a-entity');
+            scene.appendChild(fixedEntity);
+            fixedEntity.object3D.position.copy(worldPos);
+            fixedEntity.object3D.quaternion.copy(worldQuat);
+
+            fixedEntity.appendChild(model);
+          });
+        }
+      });
+    </script>
+  </head>
   
   <body style="margin: 0px; overflow: hidden;">
-    
-    <!-- A-SCENE: Это наша AR-сцена. -->
-    <!-- Указываем путь к нашему файлу-слепку targets.mind -->
     <a-scene mindar-image="imageTargetSrc: ./mind/targets.mind;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       
-      <!-- ASSETS: Здесь мы регистрируем 3D-модели, чтобы они загрузились заранее -->
       <a-assets>
-        <!-- Указываем путь к нашей 3D-модели cartoon.glb -->
         <a-asset-item id="myModel" src="./models/cartoon.glb"></a-asset-item>
       </a-assets>
 
-      <!-- КАМЕРА: Это "глаза" пользователя в браузере -->
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <!-- TARGET: Это место, где появится модель, когда камера найдет маркер -->
-      <!-- targetIndex: 0 - это первая картинка в файле targets.mind -->
-      <a-entity mindar-image-target="targetIndex: 0" stay-visible
-        <!-- Рисуем нашу 3D-модель (src="#myModel"). Устанавливаем масштаб и вращение -->
-        <!-- scale: 0.2 0.2 0.2 (подбери масштаб, чтобы модель не была огромной) -->
-        <!-- animation-mixer: эта команда включает анимацию, если она есть в 3D-файле -->
-        <a-gltf-model rotation="0 0 0" position="0 0 0" scale="10 10 10" src="#myModel" animation-mixer></a-gltf-model>
+      <a-entity mindar-image-target="targetIndex: 0" capture-and-detach>
+        <a-gltf-model rotation="0 0 0" position="0 0 0" scale="6 6 6" src="#myModel" animation-mixer></a-gltf-model>
       </a-entity>
 
     </a-scene>
