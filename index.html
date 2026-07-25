@@ -6,25 +6,71 @@
     
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+    <style>
+      .ar-screen {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.85);
+        color: white;
+        font-family: sans-serif;
+        z-index: 999;
+        padding: 20px;
+        box-sizing: border-box;
+        overflow-y: auto;
+      }
+      .menu-item {
+        padding: 14px;
+        margin: 8px 0;
+        background: rgba(255,255,255,0.1);
+        border-radius: 10px;
+        font-size: 16px;
+      }
+      .back-btn, .menu-btn {
+        display: inline-block;
+        padding: 10px 18px;
+        background: #444;
+        border-radius: 8px;
+        color: white;
+        font-family: sans-serif;
+        margin-top: 12px;
+      }
+      #menu-open-btn {
+        display: none;
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 12px 24px;
+        background: rgba(0,0,0,0.8);
+        color: white;
+        border-radius: 30px;
+        font-family: sans-serif;
+        z-index: 998;
+      }
+    </style>
   </head>
   
   <body style="margin: 0px; overflow: hidden;">
 
-    <div id="popup-text" style="
-      display: none;
-      position: fixed;
-      bottom: 40px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,0.75);
-      color: white;
-      padding: 12px 20px;
-      border-radius: 12px;
-      font-family: sans-serif;
-      font-size: 16px;
-      z-index: 999;
-    ">
-      Привет! Это секретная фишка бара 🍺
+    <!-- Кнопка вызова меню, появляется после нахождения маркера -->
+    <div id="menu-open-btn" onclick="showScreen('menu')">📋 Меню</div>
+
+    <!-- Экран 1: список напитков -->
+    <div id="screen-menu" class="ar-screen">
+      <h2>Меню бара</h2>
+      <div class="menu-item" onclick="showDrink('mojito')">🍹 Мохито</div>
+      <div class="menu-item" onclick="showDrink('negroni')">🥃 Негрони</div>
+      <div class="menu-item" onclick="showDrink('beer')">🍺 Крафтовое пиво</div>
+      <div class="back-btn" onclick="hideAllScreens()">Закрыть</div>
+    </div>
+
+    <!-- Экран 2: описание конкретного напитка -->
+    <div id="screen-drink" class="ar-screen">
+      <h2 id="drink-title"></h2>
+      <p id="drink-desc"></p>
+      <div class="back-btn" onclick="showScreen('menu')">← Назад к меню</div>
     </div>
 
     <audio id="click-sound" src="./sounds/pop.mp3" preload="auto"></audio>
@@ -44,26 +90,33 @@
     </a-scene>
 
     <script>
-      let modelFound = false;
+      // Данные напитков — описание каждого пункта меню
+      const drinks = {
+        mojito: { title: "Мохито", desc: "Ром, мята, лайм, содовая. Классика, освежает в любую погоду." },
+        negroni: { title: "Негрони", desc: "Джин, кампари, вермут. Горький, крепкий, для тех кто знает толк." },
+        beer: { title: "Крафтовое пиво", desc: "Местная пивоварня, IPA, 5.8%. Наш хит месяца." }
+      };
 
       document.querySelector('#target').addEventListener('targetFound', () => {
-        modelFound = true;
+        document.getElementById('menu-open-btn').style.display = 'block';
+        document.getElementById('click-sound').play();
       });
 
-      document.body.addEventListener('touchstart', () => {
-        if (modelFound) {
-          document.getElementById('popup-text').style.display = 'block';
-          document.getElementById('click-sound').play();
-        }
-      });
+      function showScreen(id) {
+        hideAllScreens();
+        document.getElementById('screen-' + id).style.display = 'block';
+      }
 
-      // на всякий случай дублируем для десктопа/мыши
-      document.body.addEventListener('click', () => {
-        if (modelFound) {
-          document.getElementById('popup-text').style.display = 'block';
-          document.getElementById('click-sound').play();
-        }
-      });
+      function hideAllScreens() {
+        document.querySelectorAll('.ar-screen').forEach(el => el.style.display = 'none');
+      }
+
+      function showDrink(key) {
+        const d = drinks[key];
+        document.getElementById('drink-title').innerText = d.title;
+        document.getElementById('drink-desc').innerText = d.desc;
+        showScreen('drink');
+      }
     </script>
   </body>
 </html>
