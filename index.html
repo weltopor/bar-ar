@@ -20,7 +20,6 @@
         flex-direction: column;
       }
 
-      /* ВЕРХ: галерея фото — 2/3 экрана */
       .gallery-wrap {
         height: 66%;
         position: relative;
@@ -63,7 +62,6 @@
         text-shadow: 0 2px 8px rgba(0,0,0,0.8);
       }
 
-      /* НИЗ: бегущее меню — 1/3 экрана */
       .menu-strip-wrap {
         height: 34%;
         background: linear-gradient(180deg, #111, #000);
@@ -107,7 +105,6 @@
         font-size: 18px;
       }
 
-      /* Попап описания пункта меню */
       .item-popup {
         display: none;
         position: fixed;
@@ -126,10 +123,25 @@
         padding: 8px 16px;
         border-radius: 8px;
       }
+
+      /* Показывается, если что-то пошло не так с загрузкой JSON */
+      .error-banner {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        background: #b71c1c;
+        color: white;
+        padding: 10px;
+        font-size: 13px;
+        z-index: 1003;
+        text-align: center;
+      }
     </style>
   </head>
   
   <body>
+
+    <div class="error-banner" id="error-banner"></div>
 
     <div id="screen-menu" class="ar-screen">
       <div class="exit-btn" onclick="exitMenu()">✕</div>
@@ -165,11 +177,26 @@
         2: "./menus/bar3.json"
       };
 
+      function showError(msg) {
+        const banner = document.getElementById('error-banner');
+        banner.innerText = msg;
+        banner.style.display = 'block';
+        console.log(msg);
+      }
+
       function onTargetFound(index) {
         fetch(BAR_MENUS[index])
-          .then(res => res.json())
+          .then(res => {
+            if (!res.ok) throw new Error('Файл меню не найден: ' + BAR_MENUS[index] + ' (код ' + res.status + ')');
+            return res.json();
+          })
           .then(data => buildMenuScreen(data))
-          .catch(err => console.log('Ошибка загрузки меню:', err));
+          .catch(err => {
+            showError('Ошибка загрузки меню: ' + err.message);
+            // Даже при ошибке ставим камеру на паузу, чтобы не было ощущения "зависания"
+            const arSystem = document.querySelector('#ar-scene').systems["mindar-image-system"];
+            arSystem.pause();
+          });
       }
 
       Object.keys(BAR_MENUS).forEach(index => {
@@ -178,14 +205,17 @@
       });
 
       function buildMenuScreen(data) {
-        document.getElementById('bar-title').innerText = data.barName;
+        document.getElementById('bar-title').innerText = data.barName || 'Без названия';
 
-        // Галерея фото
+        // Защита: если photos/items отсутствуют в JSON — не падаем, просто показываем пусто
+        const photos = data.photos || [];
+        const items = data.items || [];
+
         const gallery = document.getElementById('gallery');
-        gallery.innerHTML = data.photos.map(src => `<img src="${src}">`).join('');
+        gallery.innerHTML = photos.map(src => `<img src="${src}">`).join('');
 
         const dotsWrap = document.getElementById('gallery-dots');
-        dotsWrap.innerHTML = data.photos.map((_, i) =>
+        dotsWrap.innerHTML = photos.map((_, i) =>
           `<span class="${i === 0 ? 'active' : ''}"></span>`
         ).join('');
 
@@ -196,14 +226,13 @@
           );
         };
 
-        // Бегущее меню — дублируем список 2 раза для бесшовной прокрутки
         const strip = document.getElementById('menu-strip');
-        const cardsHtml = data.items.map((item, i) =>
+        const cardsHtml = items.map((item, i) =>
           `<div class="menu-card" onclick="openPopup(${i})"><b>${item.name}</b></div>`
         ).join('');
         strip.innerHTML = cardsHtml + cardsHtml;
 
-        window.currentItems = data.items;
+        window.currentItems = items;
 
         document.getElementById('screen-menu').style.display = 'flex';
         const arSystem = document.querySelector('#ar-scene').systems["mindar-image-system"];
