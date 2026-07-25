@@ -6,37 +6,10 @@
     
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-
-    <script>
-      AFRAME.registerComponent('capture-and-detach', {
-        init: function () {
-          this.captured = false;
-          this.el.addEventListener('targetFound', () => {
-            if (this.captured) return;
-            this.captured = true;
-
-            const scene = this.el.sceneEl;
-            const model = this.el.querySelector('a-gltf-model');
-
-            const worldPos = new THREE.Vector3();
-            const worldQuat = new THREE.Quaternion();
-            this.el.object3D.getWorldPosition(worldPos);
-            this.el.object3D.getWorldQuaternion(worldQuat);
-
-            const fixedEntity = document.createElement('a-entity');
-            scene.appendChild(fixedEntity);
-            fixedEntity.object3D.position.copy(worldPos);
-            fixedEntity.object3D.quaternion.copy(worldQuat);
-
-            fixedEntity.appendChild(model);
-          });
-        }
-      });
-    </script>
   </head>
   
   <body style="margin: 0px; overflow: hidden;">
-    <a-scene mindar-image="imageTargetSrc: ./mind/targets.mind;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+    <a-scene mindar-image="imageTargetSrc: ./mind/targets.mind; missTolerance: 1000000;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       
       <a-assets>
         <a-asset-item id="myModel" src="./models/cartoon.glb"></a-asset-item>
@@ -44,8 +17,8 @@
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <a-entity mindar-image-target="targetIndex: 0" capture-and-detach>
-        <a-gltf-model rotation="0 0 0" position="0 0 0" scale="6 6 6" src="#myModel" animation-mixer></a-gltf-model>
+      <a-entity mindar-image-target="targetIndex: 0">
+        <a-gltf-model rotation="0 0 0" position="0 0 0" scale="5 5 5" src="#myModel" animation-mixer></a-gltf-model>
       </a-entity>
 
     </a-scene>
