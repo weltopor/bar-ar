@@ -89,34 +89,40 @@
 
     </a-scene>
 
-    <script>
-      // Данные напитков — описание каждого пункта меню
-      const drinks = {
+   <script>
+    const drinks = {
         mojito: { title: "Мохито", desc: "Ром, мята, лайм, содовая. Классика, освежает в любую погоду." },
         negroni: { title: "Негрони", desc: "Джин, кампари, вермут. Горький, крепкий, для тех кто знает толк." },
         beer: { title: "Крафтовое пиво", desc: "Местная пивоварня, IPA, 5.8%. Наш хит месяца." }
-      };
+    };
 
-      document.querySelector('#target').addEventListener('targetFound', () => {
+    function playClickSound() {
+        const sound = document.getElementById('click-sound');
+        sound.currentTime = 0;
+        sound.play();
+    }
+
+    document.querySelector('#target').addEventListener('targetFound', () => {
         document.getElementById('menu-open-btn').style.display = 'block';
-        document.getElementById('click-sound').play();
-      });
+        playClickSound();
+    });
 
-      function showScreen(id) {
+    function showScreen(id) {
         hideAllScreens();
         document.getElementById('screen-' + id).style.display = 'block';
-      }
+    }
 
-      function hideAllScreens() {
+    function hideAllScreens() {
         document.querySelectorAll('.ar-screen').forEach(el => el.style.display = 'none');
-      }
+    }
 
-      function showDrink(key) {
+    function showDrink(key) {
         const d = drinks[key];
         document.getElementById('drink-title').innerText = d.title;
         document.getElementById('drink-desc').innerText = d.desc;
         showScreen('drink');
-      }
+        playClickSound();
+    }
     </script>
   </body>
 </html>
