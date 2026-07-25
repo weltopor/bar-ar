@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>AR Бар</title>
+    <title>AR Меню</title>
     
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
@@ -12,7 +12,7 @@
         display: none;
         position: fixed;
         top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.85);
+        background: rgba(0,0,0,0.9);
         color: white;
         font-family: sans-serif;
         z-index: 999;
@@ -25,15 +25,12 @@
         margin: 8px 0;
         background: rgba(255,255,255,0.1);
         border-radius: 10px;
-        font-size: 16px;
       }
-      .back-btn, .menu-btn {
+      .back-btn {
         display: inline-block;
         padding: 10px 18px;
         background: #444;
         border-radius: 8px;
-        color: white;
-        font-family: sans-serif;
         margin-top: 12px;
       }
       #menu-open-btn {
@@ -57,79 +54,44 @@
     <div id="menu-open-btn" onclick="showScreen('menu')">📋 Меню</div>
 
     <div id="screen-menu" class="ar-screen">
-      <h2>Меню бара</h2>
-      <div class="menu-item" onclick="showDrink('mojito')">🍹 Мохито</div>
-      <div class="menu-item" onclick="showDrink('negroni')">🥃 Негрони</div>
-      <div class="menu-item" onclick="showDrink('beer')">🍺 Крафтовое пиво</div>
+      <h2 id="bar-title"></h2>
+      <div id="menu-items"></div>
       <div class="back-btn" onclick="hideAllScreens()">Закрыть</div>
     </div>
 
-    <div id="screen-drink" class="ar-screen">
-      <h2 id="drink-title"></h2>
-      <p id="drink-desc"></p>
-      <div class="back-btn" onclick="showScreen('menu')">← Назад к меню</div>
-    </div>
-
-    <audio id="click-sound" src="./sounds/pop.mp3" preload="auto"></audio>
-
-    <a-scene mindar-image="imageTargetSrc: ./mind/targets.mind; missTolerance: 1000000;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
-      
-      <a-assets>
-        <a-asset-item id="myModel" src="./models/cartoon.glb"></a-asset-item>
-      </a-assets>
-
+    <a-scene mindar-image="imageTargetSrc: ./mind/bar1-targets.mind; missTolerance: 1000000;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-
-      <a-entity id="target" mindar-image-target="targetIndex: 0">
-        <a-gltf-model rotation="0 0 0" position="0 0 -1" scale="2 2 2" src="#myModel" animation-mixer></a-gltf-model>
-      </a-entity>
-
+      <a-entity id="target" mindar-image-target="targetIndex: 0"></a-entity>
     </a-scene>
 
     <script>
-    const drinks = {
-        mojito: { title: "Мохито", desc: "Ром, мята, лайм, содовая. Классика, освежает в любую погоду." },
-        negroni: { title: "Негрони", desc: "Джин, кампари, вермут. Горький, крепкий, для тех кто знает толк." },
-        beer: { title: "Крафтовое пиво", desc: "Местная пивоварня, IPA, 5.8%. Наш хит месяца." }
-    };
+      // Единственное, что меняется под каждый бар — это имя JSON-файла
+      const MENU_FILE = "./menus/bar1.json";
 
-    function playClickSound() {
-        const sound = document.getElementById('click-sound');
-        try {
-        sound.pause();
-        sound.currentTime = 0;
-        } catch (e) {
-        console.log('Не удалось сбросить currentTime:', e);
-        }
-        const playPromise = sound.play();
-        if (playPromise) {
-        playPromise.catch(err => console.log('Play заблокирован:', err));
-        }
-    }
+      let menuData = null;
 
-    document.querySelector('#target').addEventListener('targetFound', () => {
+      fetch(MENU_FILE)
+        .then(res => res.json())
+        .then(data => {
+          menuData = data;
+          document.getElementById('bar-title').innerText = data.barName;
+          const itemsHtml = data.items.map(item =>
+            `<div class="menu-item"><b>${item.name}</b><br>${item.desc}</div>`
+          ).join('');
+          document.getElementById('menu-items').innerHTML = itemsHtml;
+        });
+
+      document.querySelector('#target').addEventListener('targetFound', () => {
         document.getElementById('menu-open-btn').style.display = 'block';
-        playClickSound();
-    });
+      });
 
-    function showScreen(id) {
-        hideAllScreens();
+      function showScreen(id) {
         document.getElementById('screen-' + id).style.display = 'block';
-        playClickSound();
-    }
+      }
 
-    function hideAllScreens() {
+      function hideAllScreens() {
         document.querySelectorAll('.ar-screen').forEach(el => el.style.display = 'none');
-        playClickSound();
-    }
-
-    function showDrink(key) {
-        const d = drinks[key];
-        document.getElementById('drink-title').innerText = d.title;
-        document.getElementById('drink-desc').innerText = d.desc;
-        showScreen('drink');
-        // playClickSound() тут не нужен второй раз — showScreen уже его вызывает
-    }
+      }
     </script>
   </body>
 </html>
