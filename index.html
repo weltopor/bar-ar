@@ -32,14 +32,15 @@
         text-align: center;
       }
 
-      /* Галерея */
-      .gallery-wrap { height: 60%; position: relative; }
+      /* Верх: галерея бара — 50% */
+      .gallery-wrap { height: 50%; position: relative; }
       .gallery {
         display: flex;
         overflow-x: auto;
         scroll-snap-type: x mandatory;
         height: 100%;
         -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
       }
       .gallery img {
         flex: 0 0 100%;
@@ -47,6 +48,7 @@
         height: 100%;
         object-fit: cover;
         scroll-snap-align: start;
+        scroll-snap-stop: always;
       }
       .gallery-dots {
         position: absolute;
@@ -65,24 +67,61 @@
         text-shadow: 0 2px 8px rgba(0,0,0,0.8);
       }
 
-      /* Меню списком, со скроллом */
-      .menu-list-wrap {
-        height: 40%;
+      /* Низ: карусель карточек напитков — 50% */
+      .drinks-wrap {
+        height: 50%;
         background: #111;
-        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+      }
+      .drinks-label {
+        padding: 12px 16px 6px;
+        font-size: 13px;
+        color: rgba(255,255,255,0.5);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .drinks-strip {
+        flex: 1;
+        display: flex;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        scroll-behavior: smooth;
         -webkit-overflow-scrolling: touch;
-        padding: 10px 16px;
+        gap: 12px;
+        padding: 0 16px 16px;
         box-sizing: border-box;
       }
-      .menu-row {
+      .drink-card {
+        flex: 0 0 62%;
+        scroll-snap-align: start;
+        scroll-snap-stop: always;
+        background: rgba(255,255,255,0.06);
+        border-radius: 16px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .drink-card img {
+        width: 100%;
+        height: 60%;
+        object-fit: cover;
+      }
+      .drink-card-body {
+        padding: 10px 12px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+      .drink-card-name { font-size: 15px; font-weight: bold; }
+      .drink-card-meta {
         display: flex;
         justify-content: space-between;
-        align-items: center;
-        padding: 14px 0;
-        border-bottom: 1px solid rgba(255,255,255,0.1);
+        margin-top: 6px;
+        font-size: 13px;
+        color: #9fd3c7;
       }
-      .menu-row .name { font-size: 16px; }
-      .menu-row .price { font-size: 15px; color: #9fd3c7; font-weight: bold; }
 
       .exit-btn {
         position: fixed;
@@ -95,7 +134,6 @@
         font-size: 18px;
       }
 
-      /* Экран детали напитка */
       .detail-screen {
         display: none;
         position: fixed;
@@ -144,7 +182,10 @@
         <div class="gallery-dots" id="gallery-dots"></div>
       </div>
 
-      <div class="menu-list-wrap" id="menu-list"></div>
+      <div class="drinks-wrap">
+        <div class="drinks-label">Меню</div>
+        <div class="drinks-strip" id="drinks-strip"></div>
+      </div>
     </div>
 
     <div class="detail-screen" id="detail-screen">
@@ -210,7 +251,7 @@
         const items = data.items || [];
         window.currentItems = items;
 
-        // Галерея
+        // Галерея бара
         const gallery = document.getElementById('gallery');
         gallery.innerHTML = photos.map(src => `<img src="${src}">`).join('');
 
@@ -224,27 +265,32 @@
           [...dotsWrap.children].forEach((dot, i) => dot.classList.toggle('active', i === idx));
         };
 
-        // Ручной свайп ставит автопрокрутку на паузу на 4 секунды
         gallery.addEventListener('touchstart', () => {
           clearInterval(autoplayTimer);
           clearTimeout(autoplayPausedTimer);
           autoplayPausedTimer = setTimeout(() => startAutoplay(gallery, photos.length), 4000);
         });
 
-        startAutoplay(gallery, photos.length);
-
-        // Меню списком
-        const menuList = document.getElementById('menu-list');
-        menuList.innerHTML = items.map((item, i) => `
-          <div class="menu-row" onclick="openDetail(${i})">
-            <span class="name">${item.name}</span>
-            <span class="price">${item.price || ''}</span>
+        // Карусель напитков
+        const strip = document.getElementById('drinks-strip');
+        strip.innerHTML = items.map((item, i) => `
+          <div class="drink-card" onclick="openDetail(${i})">
+            <img src="${item.image || ''}">
+            <div class="drink-card-body">
+              <div class="drink-card-name">${item.name}</div>
+              <div class="drink-card-meta">
+                <span>${item.price || ''}</span>
+                <span>${item.abv || ''}</span>
+              </div>
+            </div>
           </div>
         `).join('');
 
         document.getElementById('screen-menu').style.display = 'flex';
         const arSystem = document.querySelector('#ar-scene').systems["mindar-image-system"];
         arSystem.pause();
+
+        requestAnimationFrame(() => startAutoplay(gallery, photos.length));
       }
 
       function startAutoplay(gallery, count) {
