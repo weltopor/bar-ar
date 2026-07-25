@@ -1,5 +1,11 @@
 {
   "barName": "Stubertus",
+  "themeColor": "#1a1a2e",
+  "photos": [
+    "./photos/bar1-1.jpg",
+    "./photos/bar1-2.jpg",
+    "./photos/bar1-3.jpg"
+  ],
   "items": [
     { "name": "Мохито", "desc": "Ром, мята, лайм, содовая." },
     { "name": "Негрони", "desc": "Джин, кампари, вермут." },
