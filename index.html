@@ -1,16 +1,34 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <!-- Основные настройки страницы -->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>AR Бар</title>
     
-    <!-- ПОДКЛЮЧАЕМ "БИБЛИОТЕКИ-КИРПИЧИКИ" -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
   </head>
   
   <body style="margin: 0px; overflow: hidden;">
+
+    <div id="popup-text" style="
+      display: none;
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.75);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-family: sans-serif;
+      font-size: 16px;
+      z-index: 999;
+    ">
+      Привет! Это секретная фишка бара 🍺
+    </div>
+
+    <audio id="click-sound" src="./sounds/pop.mp3" preload="auto"></audio>
+
     <a-scene mindar-image="imageTargetSrc: ./mind/targets.mind; missTolerance: 1000000;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       
       <a-assets>
@@ -19,10 +37,33 @@
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <a-entity mindar-image-target="targetIndex: 0">
+      <a-entity id="target" mindar-image-target="targetIndex: 0">
         <a-gltf-model rotation="0 0 0" position="0 0 -1" scale="2 2 2" src="#myModel" animation-mixer></a-gltf-model>
       </a-entity>
 
     </a-scene>
+
+    <script>
+      let modelFound = false;
+
+      document.querySelector('#target').addEventListener('targetFound', () => {
+        modelFound = true;
+      });
+
+      document.body.addEventListener('touchstart', () => {
+        if (modelFound) {
+          document.getElementById('popup-text').style.display = 'block';
+          document.getElementById('click-sound').play();
+        }
+      });
+
+      // на всякий случай дублируем для десктопа/мыши
+      document.body.addEventListener('click', () => {
+        if (modelFound) {
+          document.getElementById('popup-text').style.display = 'block';
+          document.getElementById('click-sound').play();
+        }
+      });
+    </script>
   </body>
 </html>
