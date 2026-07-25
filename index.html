@@ -87,47 +87,49 @@
     </a-scene>
 
     <script>
-      const drinks = {
+    const drinks = {
         mojito: { title: "Мохито", desc: "Ром, мята, лайм, содовая. Классика, освежает в любую погоду." },
         negroni: { title: "Негрони", desc: "Джин, кампари, вермут. Горький, крепкий, для тех кто знает толк." },
         beer: { title: "Крафтовое пиво", desc: "Местная пивоварня, IPA, 5.8%. Наш хит месяца." }
-      };
+    };
 
-      function playClickSound() {
+    function playClickSound() {
         const sound = document.getElementById('click-sound');
         try {
-          sound.pause();
-          sound.currentTime = 0;
+        sound.pause();
+        sound.currentTime = 0;
         } catch (e) {
-          console.log('Не удалось сбросить currentTime:', e);
+        console.log('Не удалось сбросить currentTime:', e);
         }
         const playPromise = sound.play();
         if (playPromise) {
-          playPromise.catch(err => console.log('Play заблокирован:', err));
+        playPromise.catch(err => console.log('Play заблокирован:', err));
         }
-      }
+    }
 
-      document.querySelector('#target').addEventListener('targetFound', () => {
+    document.querySelector('#target').addEventListener('targetFound', () => {
         document.getElementById('menu-open-btn').style.display = 'block';
         playClickSound();
-      });
+    });
 
-      function showScreen(id) {
+    function showScreen(id) {
         hideAllScreens();
         document.getElementById('screen-' + id).style.display = 'block';
-      }
+        playClickSound();
+    }
 
-      function hideAllScreens() {
+    function hideAllScreens() {
         document.querySelectorAll('.ar-screen').forEach(el => el.style.display = 'none');
-      }
+        playClickSound();
+    }
 
-      function showDrink(key) {
+    function showDrink(key) {
         const d = drinks[key];
         document.getElementById('drink-title').innerText = d.title;
         document.getElementById('drink-desc').innerText = d.desc;
         showScreen('drink');
-        playClickSound();
-      }
+        // playClickSound() тут не нужен второй раз — showScreen уже его вызывает
+    }
     </script>
   </body>
 </html>
