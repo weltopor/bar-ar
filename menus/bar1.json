@@ -1,5 +1,5 @@
 {
-  "barName": "Neon Lounge",
+  "barName": "Hubertus Weinstube",
   "photos": [
     "./photos/bar1-1.jpg",
     "./photos/bar1-2.jpg",
@@ -8,6 +8,6 @@
   "items": [
     { "name": "Мохито", "price": "7€", "abv": "10%", "desc": "Ром, мята, лайм, содовая. Классика, освежает.", "image": "./photos/mojito.jpg" },
     { "name": "Негрони", "price": "8€", "abv": "24%", "desc": "Джин, кампари, вермут. Горький, крепкий.", "image": "./photos/negroni.jpg" },
-    { "name": "Крафтовое пиво", "price": "7€", "abv": "5.8%", "desc": "Местная пивоварня, IPA.", "image": "./photos/beer.jpg" }
+    { "name": "Крафтовое пиво", "price": "5€", "abv": "5.8%", "desc": "Местная пивоварня, IPA.", "image": "./photos/beer.jpg" }
   ]
 }

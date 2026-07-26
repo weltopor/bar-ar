@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AR Меню</title>
+    
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+    <style>
+      body { margin: 0; overflow: hidden; font-family: sans-serif; }
+      .ar-screen {
+        display: none; position: fixed; top:0; left:0; right:0; bottom:0;
+        background: #000; color: white; z-index: 999; flex-direction: column;
+      }
+      .error-banner {
+        display: none; position: fixed; top:0; left:0; right:0;
+        background: #b71c1c; color: white; padding: 10px; font-size: 13px;
+        z-index: 1003; text-align: center;
+      }
+      .gallery-wrap { height: 50%; position: relative; }
+      .gallery {
+        display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
+        height: 100%; -webkit-overflow-scrolling: touch; scroll-behavior: smooth;
+      }
+      .gallery img {
+        flex: 0 0 100%; width: 100%; height: 100%; object-fit: cover;
+        scroll-snap-align: start; scroll-snap-stop: always;
+      }
+      .gallery-dots {
+        position: absolute; bottom: 12px; left: 0; right: 0;
+        display: flex; justify-content: center; gap: 6px;
+      }
+      .gallery-dots span {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: rgba(255,255,255,0.4);
+      }
+      .gallery-dots span.active { background: white; }
+      .bar-title-overlay {
+        position: absolute; top: 16px; left: 16px;
+        font-size: 22px; font-weight: bold;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+      }
+      .drinks-wrap { height: 50%; background: #111; display: flex; flex-direction: column; }
+      .drinks-label {
+        padding: 12px 16px 6px; font-size: 13px; color: rgba(255,255,255,0.5);
+        text-transform: uppercase; letter-spacing: 1px;
+      }
+      .drinks-strip {
+        flex: 1; display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
+        scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
+        gap: 12px; padding: 0 16px 16px; box-sizing: border-box;
+      }
+      .drink-card {
+        flex: 0 0 62%; scroll-snap-align: start; scroll-snap-stop: always;
+        background: rgba(255,255,255,0.06); border-radius: 16px;
+        overflow: hidden; display: flex; flex-direction: column;
+      }
+      .drink-card img { width: 100%; height: 60%; object-fit: cover; }
+      .drink-card-body { padding: 10px 12px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+      .drink-card-name { font-size: 15px; font-weight: bold; }
+      .drink-card-meta { display: flex; justify-content: space-between; margin-top: 6px; font-size: 13px; color: #9fd3c7; }
+      .exit-btn, .back-btn {
+        position: fixed; top: 16px; z-index: 1001;
+        background: rgba(0,0,0,0.6); border-radius: 50%;
+        width: 36px; height: 36px; display: flex;
+        align-items: center; justify-content: center; font-size: 18px;
+      }
+      .exit-btn { right: 16px; }
+      .back-btn { left: 16px; z-index: 1003; }
+      .detail-screen {
+        display: none; position: fixed; top:0; left:0; right:0; bottom:0;
+        background: #111; color: white; z-index: 1002; overflow-y: auto;
+      }
+      .detail-screen img { width: 100%; height: 45vh; object-fit: cover; }
+      .detail-body { padding: 20px; }
+      .detail-meta { display: flex; gap: 16px; color: #9fd3c7; margin-bottom: 14px; font-size: 15px; }
+    </style>
+  </head>
+  
+  <body>
+    <div class="error-banner" id="error-banner"></div>
+
+    <div id="screen-menu" class="ar-screen">
+      <div class="exit-btn" onclick="exitMenu()">✕</div>
+      <div class="gallery-wrap">
+        <div class="bar-title-overlay" id="bar-title"></div>
+        <div class="gallery" id="gallery"></div>
+        <div class="gallery-dots" id="gallery-dots"></div>
+      </div>
+      <div class="drinks-wrap">
+        <div class="drinks-label">Меню</div>
+        <div class="drinks-strip" id="drinks-strip"></div>
+      </div>
+    </div>
+
+    <div class="detail-screen" id="detail-screen">
+      <div class="back-btn" onclick="closeDetail()">←</div>
+      <img id="detail-image" src="">
+      <div class="detail-body">
+        <h2 id="detail-name"></h2>
+        <div class="detail-meta">
+          <span id="detail-price"></span>
+          <span id="detail-abv"></span>
+        </div>
+        <p id="detail-desc"></p>
+      </div>
+    </div>
+
+    <a-scene id="ar-scene" mindar-image="missTolerance: 1000000;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+    </a-scene>
+
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const barId = params.get('bar');
+
+      let autoplayTimer = null;
+      let autoplayPausedTimer = null;
+
+      function showError(msg) {
+        const banner = document.getElementById('error-banner');
+        banner.innerText = msg;
+        banner.style.display = 'block';
+        console.log(msg);
+      }
+
+      if (!barId) {
+        showError('Не указан бар в ссылке (?bar=...). Вернись к списку и выбери заведение.');
+      } else {
+        const mindFile = `./mind/${barId}-targets.mind`;
+        const menuFile = `./menus/${barId}.json`;
+
+        const scene = document.getElementById('ar-scene');
+        scene.setAttribute('mindar-image', `imageTargetSrc: ${mindFile}; missTolerance: 1000000;`);
+
+        for (let i = 0; i < 5; i++) {
+          const entity = document.createElement('a-entity');
+          entity.setAttribute('mindar-image-target', `targetIndex: ${i}`);
+          entity.addEventListener('targetFound', () => onTargetFound(menuFile));
+          scene.appendChild(entity);
+        }
+      }
+
+      function onTargetFound(menuFile) {
+        fetch(menuFile)
+          .then(res => {
+            if (!res.ok) throw new Error('Файл меню не найден: ' + menuFile + ' (код ' + res.status + ')');
+            return res.json();
+          })
+          .then(data => buildMenuScreen(data))
+          .catch(err => {
+            showError('Ошибка загрузки меню: ' + err.message);
+            const arSystem = document.querySelector('#ar-scene').systems["mindar-image-system"];
+            arSystem.pause();
+          });
+      }
+
+      function buildMenuScreen(data) {
+        document.getElementById('bar-title').innerText = data.barName || '';
+        const photos = data.photos || [];
+        const items = data.items || [];
+        window.currentItems = items;
+
+        const gallery = document.getElementById('gallery');
+        gallery.innerHTML = photos.map(src => `<img src="${src}">`).join('');
+
+        const dotsWrap = document.getElementById('gallery-dots');
+        dotsWrap.innerHTML = photos.map((_, i) =>
+          `<span class="${i === 0 ? 'active' : ''}"></span>`
+        ).join('');
+
+        gallery.onscroll = () => {
+          const idx = Math.round(gallery.scrollLeft / gallery.clientWidth);
+          [...dotsWrap.children].forEach((dot, i) => dot.classList.toggle('active', i === idx));
+        };
+
+        gallery.addEventListener('touchstart', () => {
+          clearInterval(autoplayTimer);
+          clearTimeout(autoplayPausedTimer);
+          autoplayPausedTimer = setTimeout(() => startAutoplay(gallery, photos.length), 4000);
+        });
+
+        const strip = document.getElementById('drinks-strip');
+        strip.innerHTML = items.map((item, i) => `
+          <div class="drink-card" onclick="openDetail(${i})">
+            <img src="${item.image || ''}">
+            <div class="drink-card-body">
+              <div class="drink-card-name">${item.name}</div>
+              <div class="drink-card-meta">
+                <span>${item.price || ''}</span>
+                <span>${item.abv || ''}</span>
+              </div>
+            </div>
+          </div>
+        `).join('');
+
+        document.getElementById('screen-menu').style.display = 'flex';
+        const arSystem = document.querySelector('#ar-scene').systems["mindar-image-system"];
+        arSystem.pause();
+        requestAnimationFrame(() => startAutoplay(gallery, photos.length));
+      }
+
+      function startAutoplay(gallery, count) {
+        clearInterval(autoplayTimer);
+        if (count <= 1) return;
+        let current = Math.round(gallery.scrollLeft / gallery.clientWidth);
+        autoplayTimer = setInterval(() => {
+          current = (current + 1) % count;
+          gallery.scrollTo({ left: current * gallery.clientWidth, behavior: 'smooth' });
+        }, 3000);
+      }
+
+      function openDetail(index) {
+        const item = window.currentItems[index];
+        document.getElementById('detail-image').src = item.image || '';
+        document.getElementById('detail-name').innerText = item.name;
+        document.getElementById('detail-price').innerText = item.price || '';
+        document.getElementById('detail-abv').innerText = item.abv ? item.abv + ' алк.' : '';
+        document.getElementById('detail-desc').innerText = item.desc || '';
+        document.getElementById('detail-screen').style.display = 'block';
+      }
+
+      function closeDetail() { document.getElementById('detail-screen').style.display = 'none'; }
+      function exitMenu() { location.reload(); }
+    </script>
+  </body>
+</html>

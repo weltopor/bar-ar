@@ -1,0 +1,23 @@
+[
+  {
+    "id": "bar1",
+    "name": "Hubertus Weinstube",
+    "cover": "./photos/bar1-cover.jpg",
+    "lat": 50.3618360818985,
+    "lng": 7.59597012054807
+  },
+  {
+    "id": "bar2",
+    "name": "Sugar Ray's Bar",
+    "cover": "./photos/bar2-cover.jpg",
+    "lat": 50.36168992916146,
+    "lng": 7.594998583794029
+  },
+  {
+    "id": "bar3",
+    "name": "Backstage Bar",
+    "cover": "./photos/bar3-cover.jpg",
+    "lat": 50.36193347573562,
+    "lng":  7.595729717521735
+  }
+]
