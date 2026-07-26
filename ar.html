@@ -18,6 +18,19 @@
         background: #b71c1c; color: white; padding: 10px; font-size: 13px;
         z-index: 1003; text-align: center;
       }
+      #scan-close-btn {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1000;
+        background: rgba(0,0,0,0.6);
+        color: white;
+        padding: 12px 24px;
+        border-radius: 30px;
+        font-family: sans-serif;
+        font-size: 15px;
+      }
       .gallery-wrap { height: 50%; position: relative; }
       .gallery {
         display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
@@ -80,6 +93,9 @@
   
   <body>
     <div class="error-banner" id="error-banner"></div>
+
+    <!-- Кнопка закрытия, видна во время сканирования -->
+    <div id="scan-close-btn" onclick="window.location.href = './list.html'">✕ Закрыть</div>
 
     <div id="screen-menu" class="ar-screen">
       <div class="exit-btn" onclick="exitMenu()">✕</div>
@@ -194,6 +210,9 @@
             </div>
           </div>
         `).join('');
+
+        // Прячем кнопку "Закрыть", раз уже открылось меню — есть свой крестик внутри
+        document.getElementById('scan-close-btn').style.display = 'none';
 
         document.getElementById('screen-menu').style.display = 'flex';
         const arSystem = document.querySelector('#ar-scene').systems["mindar-image-system"];
