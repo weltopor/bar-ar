@@ -63,7 +63,7 @@
           (pos) => {
             const userLat = pos.coords.latitude;
             const userLng = pos.coords.longitude;
-            map.setView([userLat, userLng], 17); // 17 — крупный приближенный вид
+            map.setView([userLat, userLng], 19); // 19 — крупный приближенный вид
 
             // Маркер "ты здесь"
             L.circleMarker([userLat, userLng], {
