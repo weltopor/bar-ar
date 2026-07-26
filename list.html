@@ -36,17 +36,50 @@
         text-decoration: none;
         font-size: 14px;
       }
+
+      /* Делаем подпись OpenStreetMap максимально незаметной, но не убираем совсем (обязательное требование лицензии) */
+      .leaflet-control-attribution {
+        font-size: 8px !important;
+        opacity: 0.4;
+        background: transparent !important;
+        padding: 2px 4px !important;
+      }
     </style>
   </head>
   <body>
     <div id="map"></div>
 
     <script>
-      const map = L.map('map').setView([50.3569, 7.5890], 14);
+      // Стартуем с примерного центра города, потом попробуем уточнить по геолокации
+      const map = L.map('map').setView([50.3569, 7.5890], 15);
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap'
+        attribution: '© OpenStreetMap'
       }).addTo(map);
+
+      // Пытаемся определить реальное местоположение пользователя
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const userLat = pos.coords.latitude;
+            const userLng = pos.coords.longitude;
+            map.setView([userLat, userLng], 17); // 17 — крупный приближенный вид
+
+            // Маркер "ты здесь"
+            L.circleMarker([userLat, userLng], {
+              radius: 8,
+              fillColor: '#4285F4',
+              fillOpacity: 1,
+              color: 'white',
+              weight: 2
+            }).addTo(map).bindPopup('Ты здесь');
+          },
+          (err) => {
+            console.log('Геолокация недоступна:', err.message);
+            // Если пользователь не разрешил доступ — остаёмся на стандартном центре города
+          }
+        );
+      }
 
       fetch('./bars.json')
         .then(res => res.json())
