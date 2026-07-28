@@ -4,9 +4,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Бары Кобленца — карта</title>
 
-    <!-- Telegram Mini App SDK -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
     <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
     <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
 
@@ -57,20 +54,6 @@
     <div id="map"></div>
 
     <script>
-      if (window.Telegram && window.Telegram.WebApp) {
-        Telegram.WebApp.ready();
-        Telegram.WebApp.expand();
-      }
-
-      function openScan(barId) {
-        const url = `https://weltopor.github.io/bar-ar/ar.html?bar=${barId}`;
-        if (window.Telegram && window.Telegram.WebApp) {
-          Telegram.WebApp.openLink(url);
-        } else {
-          window.location.href = url;
-        }
-      }
-
       const map = new maplibregl.Map({
         container: 'map',
         style: 'https://tiles.openfreemap.org/styles/liberty',
@@ -143,7 +126,7 @@
                 <div class="popup-card">
                   <img src="${bar.cover}">
                   <div class="name">${bar.name}</div>
-                  <a href="javascript:void(0)" onclick="openScan('${bar.id}')">Сканировать →</a>
+                  <a href="./ar.html?bar=${bar.id}">Сканировать →</a>
                 </div>
               `);
 
