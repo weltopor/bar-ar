@@ -3,6 +3,8 @@
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>AR Меню</title>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
@@ -94,7 +96,6 @@
   <body>
     <div class="error-banner" id="error-banner"></div>
 
-    <!-- Кнопка закрытия, видна во время сканирования -->
     <div id="scan-close-btn" onclick="window.location.href = './list.html'">✕ Закрыть</div>
 
     <div id="screen-menu" class="ar-screen">
@@ -128,6 +129,11 @@
     </a-scene>
 
     <script>
+      if (window.Telegram && window.Telegram.WebApp) {
+        Telegram.WebApp.ready();
+        Telegram.WebApp.expand();
+      }
+
       const params = new URLSearchParams(window.location.search);
       const barId = params.get('bar');
 
@@ -211,7 +217,6 @@
           </div>
         `).join('');
 
-        // Прячем кнопку "Закрыть", раз уже открылось меню — есть свой крестик внутри
         document.getElementById('scan-close-btn').style.display = 'none';
 
         document.getElementById('screen-menu').style.display = 'flex';

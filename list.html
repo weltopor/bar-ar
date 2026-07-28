@@ -57,23 +57,14 @@
     <div id="map"></div>
 
     <script>
-      // Инициализация Telegram Mini App — безопасно выполняется и вне Telegram,
-      // просто ничего не делает, если window.Telegram отсутствует.
       if (window.Telegram && window.Telegram.WebApp) {
         Telegram.WebApp.ready();
-        Telegram.WebApp.expand(); // разворачивает мини-приложение на весь экран
+        Telegram.WebApp.expand();
       }
 
-      // Открывает AR-сканирование либо во внешнем браузере (если мы внутри Telegram —
-      // подстраховка на случай, если WebView Telegram не даст доступ к камере),
-      // либо обычным переходом, если открыто как простой сайт.
       function openScan(barId) {
         const url = `./ar.html?bar=${barId}`;
-        if (window.Telegram && window.Telegram.WebApp) {
-          Telegram.WebApp.openLink(url, { try_instant_view: false });
-        } else {
-          window.location.href = url;
-        }
+        window.location.href = url;
       }
 
       const map = new maplibregl.Map({
@@ -141,9 +132,9 @@
               el.className = 'custom-marker';
               const img = document.createElement('img');
               img.src = ICON_FILES[bar.category] || ICON_FILES.default;
+              img.onerror = () => console.log('Не загрузилась иконка:', img.src);
               el.appendChild(img);
 
-              // Ссылка заменена на кнопку с onclick, чтобы работать через openScan()
               const popup = new maplibregl.Popup({ offset: 40 }).setHTML(`
                 <div class="popup-card">
                   <img src="${bar.cover}">
