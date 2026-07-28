@@ -4,12 +4,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Бары Кобленца — карта</title>
 
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Telegram Mini App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+    <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
 
     <style>
       body, html { margin: 0; padding: 0; height: 100%; }
       #map { width: 100%; height: 100%; }
+
+      .custom-marker {
+        width: 44px;
+        height: 44px;
+        cursor: pointer;
+      }
+      .custom-marker img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        filter: drop-shadow(0 2px 3px rgba(0,0,0,0.35));
+      }
 
       .popup-card {
         text-align: center;
@@ -36,66 +51,115 @@
         text-decoration: none;
         font-size: 14px;
       }
-
-      /* Делаем подпись OpenStreetMap максимально незаметной, но не убираем совсем (обязательное требование лицензии) */
-      .leaflet-control-attribution {
-        font-size: 8px !important;
-        opacity: 0.4;
-        background: transparent !important;
-        padding: 2px 4px !important;
-      }
     </style>
   </head>
   <body>
     <div id="map"></div>
 
     <script>
-      // Стартуем с примерного центра города, потом попробуем уточнить по геолокации
-      const map = L.map('map').setView([50.3569, 7.5890], 15);
-
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap'
-      }).addTo(map);
-
-      // Пытаемся определить реальное местоположение пользователя
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            const userLat = pos.coords.latitude;
-            const userLng = pos.coords.longitude;
-            map.setView([userLat, userLng], 19); // 19 — крупный приближенный вид
-
-            // Маркер "ты здесь"
-            L.circleMarker([userLat, userLng], {
-              radius: 8,
-              fillColor: '#4285F4',
-              fillOpacity: 1,
-              color: 'white',
-              weight: 2
-            }).addTo(map).bindPopup('Ты здесь');
-          },
-          (err) => {
-            console.log('Геолокация недоступна:', err.message);
-            // Если пользователь не разрешил доступ — остаёмся на стандартном центре города
-          }
-        );
+      // Инициализация Telegram Mini App — безопасно выполняется и вне Telegram,
+      // просто ничего не делает, если window.Telegram отсутствует.
+      if (window.Telegram && window.Telegram.WebApp) {
+        Telegram.WebApp.ready();
+        Telegram.WebApp.expand(); // разворачивает мини-приложение на весь экран
       }
 
-      fetch('./bars.json')
-        .then(res => res.json())
-        .then(bars => {
-          bars.forEach(bar => {
-            const marker = L.marker([bar.lat, bar.lng]).addTo(map);
-            marker.bindPopup(`
-              <div class="popup-card">
-                <img src="${bar.cover}">
-                <div class="name">${bar.name}</div>
-                <a href="./ar.html?bar=${bar.id}">Сканировать →</a>
-              </div>
-            `);
+      // Открывает AR-сканирование либо во внешнем браузере (если мы внутри Telegram —
+      // подстраховка на случай, если WebView Telegram не даст доступ к камере),
+      // либо обычным переходом, если открыто как простой сайт.
+      function openScan(barId) {
+        const url = `./ar.html?bar=${barId}`;
+        if (window.Telegram && window.Telegram.WebApp) {
+          Telegram.WebApp.openLink(url, { try_instant_view: false });
+        } else {
+          window.location.href = url;
+        }
+      }
+
+      const map = new maplibregl.Map({
+        container: 'map',
+        style: 'https://tiles.openfreemap.org/styles/liberty',
+        center: [7.5890, 50.3569],
+        zoom: 14
+      });
+
+      map.addControl(new maplibregl.NavigationControl(), 'top-right');
+
+      const LAYERS_TO_REMOVE = ['poi_r20', 'poi_r7', 'poi_r1', 'poi_transit', 'building-3d', 'road_area_pattern'];
+
+      map.on('load', () => {
+        LAYERS_TO_REMOVE.forEach(id => {
+          if (map.getLayer(id)) map.removeLayer(id);
+        });
+
+        if (map.getLayer('building')) {
+          map.setLayerZoomRange('building', 13, 24);
+        }
+
+        try {
+          map.addLayer({
+            id: 'housenumbers',
+            type: 'symbol',
+            source: 'openmaptiles',
+            'source-layer': 'housenumber',
+            minzoom: 17,
+            layout: {
+              'text-field': ['get', 'housenumber'],
+              'text-font': ['Noto Sans Regular'],
+              'text-size': 10
+            },
+            paint: {
+              'text-color': '#8a7a6d',
+              'text-halo-color': '#ffffff',
+              'text-halo-width': 1
+            }
           });
-        })
-        .catch(err => console.log('Ошибка загрузки списка баров:', err));
+        } catch (err) {
+          console.log('Не удалось добавить слой номеров домов:', err);
+        }
+
+        loadBars();
+      });
+
+      const ICON_FILES = {
+        bar: './icons/bar.png',
+        restaurant: './icons/restaurant.png',
+        museum: './icons/museum.png',
+        cafe: './icons/cafe.png',
+        club: './icons/club.png',
+        landmark: './icons/landmark.png',
+        shop: './icons/shop.png',
+        default: './icons/default.png'
+      };
+
+      function loadBars() {
+        fetch('./bars.json')
+          .then(res => res.json())
+          .then(bars => {
+            bars.forEach(bar => {
+              const el = document.createElement('div');
+              el.className = 'custom-marker';
+              const img = document.createElement('img');
+              img.src = ICON_FILES[bar.category] || ICON_FILES.default;
+              el.appendChild(img);
+
+              // Ссылка заменена на кнопку с onclick, чтобы работать через openScan()
+              const popup = new maplibregl.Popup({ offset: 40 }).setHTML(`
+                <div class="popup-card">
+                  <img src="${bar.cover}">
+                  <div class="name">${bar.name}</div>
+                  <a href="javascript:void(0)" onclick="openScan('${bar.id}')">Сканировать →</a>
+                </div>
+              `);
+
+              new maplibregl.Marker({ element: el, anchor: 'bottom' })
+                .setLngLat([bar.lng, bar.lat])
+                .setPopup(popup)
+                .addTo(map);
+            });
+          })
+          .catch(err => console.log('Ошибка загрузки списка баров:', err));
+      }
     </script>
   </body>
 </html>
